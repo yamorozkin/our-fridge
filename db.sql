@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS dishes(
     dish_time DECIMAL(8,2)
 );
 
+
 CREATE TABLE IF NOT EXISTS dish_ingredients(
     dish_ingredient_id SERIAL PRIMARY KEY,
     dish_id INTEGER NOT NULL REFERENCES dishes(dish_id) ON DELETE CASCADE,
