@@ -1,0 +1,8 @@
+services:
+  postgres:
+    environment:
+      POSTGRES_DB: myapp_dev
+      POSTGRES_USER: dev_user
+      POSTGRES_PASSWORD: dev_password_123  # проще для разработки
+      POSTGRES_HOST_AUTH_METHOD: trust     # для локальной разработки
+version: '3.8'
