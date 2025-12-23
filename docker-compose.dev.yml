@@ -1,8 +1,56 @@
-services:
-  postgres:
-    environment:
-      POSTGRES_DB: myapp_dev
-      POSTGRES_USER: dev_user
-      POSTGRES_PASSWORD: dev_password_123  # проще для разработки
-      POSTGRES_HOST_AUTH_METHOD: trust     # для локальной разработки
 version: '3.8'
+# Здесь начинается список сервисов (контейнеров), которые будем запускать
+services:
+  # Первый сервис - база данных PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    # Имя контейнера, чтобы обращаться к нему
+    container_name: ourfridge_db
+    # Автоматически перезапускать если упал
+    restart: unless-stopped
+    # Переменные окружения (как настройки для PostgreSQL)
+    environment:
+      # Имя базы данных, которая создастся автоматически
+      POSTGRES_DB: ourfridge
+      # Имя пользователя для подключения к базе
+      POSTGRES_USER: fridge_user
+      # Пароль для пользователя
+      POSTGRES_PASSWORD: 123
+      # Настройки кодировки (чтобы русские буквы работали)
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+      # Часовой пояс (Москва)
+      TZ: "Europe/Moscow"
+    # Проброс портов: левый порт на компьютере -> правый порт в контейнере
+    # localhost:5432 -> контейнер:5432
+    ports:
+      - "5432:5432"
+    # Папки и файлы, которые "подключаем" к контейнеру
+    volumes:
+      # 1. Постоянное хранилище для данных БД (чтобы не терялись при перезапуске)
+      # "postgres_data" - специальное место в Docker для хранения данных
+      # ":/var/lib/postgresql/data" - куда внутри контейнера монтировать
+      - postgres_data:/var/lib/postgresql/data
+
+      # 2. Наш файл с SQL командами (структура таблиц)
+      # "./database/init.sql" - файл на нашем компьютере
+      # куда положить в контейнере
+      - ./database/db.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      # 3. Тестовые данные (если нужны)
+      # "./database/seeds/test_data.sql" - файл с тестовыми данными
+      - ./database/seeds/test_data.sql:/docker-entrypoint-initdb.d/02_data.sql
+    # Проверка здоровья: Docker будет проверять жив ли PostgreSQL
+    healthcheck:
+      # Команда для проверки: "pg_isready" проверяет готовность PostgreSQL
+      test: ["CMD-SHELL", "pg_isready -U fridge_user -d ourfridge"]
+      interval: 10s      # Проверять каждые 10 секунд
+      timeout: 5s        # Ждать ответа не больше 5 секунд
+      retries: 5         # Попробовать 5 раз если не отвечает
+      start_period: 30s  # Ждать 30 секунд после старта перед проверками
+
+    # Ограничения памяти (чтобы не съедал всю память компьютера)
+    mem_limit: 512m      # Максимум 512 мегабайт
+    shm_size: 128mb      # Размер shared memory 128 мегабайт
+
+volumes:
+  postgres_data:  # вот это определяет volume
+
